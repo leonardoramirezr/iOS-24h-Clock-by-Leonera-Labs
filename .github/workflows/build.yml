@@ -156,7 +156,30 @@ jobs:
             MARKETING_VERSION="$VERSION"
             CURRENT_PROJECT_VERSION="$BUILD_NUMBER")
           format() { if command -v xcbeautify >/dev/null 2>&1; then xcbeautify --renderer github-actions; else cat; fi; }
-          xcodebuild "${args[@]}" 2>&1 | tee "$RUNNER_TEMP/xcodebuild-archive.log" | format
+          # Xcode 16 keeps profiles in UserData; older tools use MobileDevice. Keep both in sync.
+          new_profiles="$HOME/Library/Developer/Xcode/UserData/Provisioning Profiles"
+          old_profiles="$HOME/Library/MobileDevice/Provisioning Profiles"
+          mkdir -p "$new_profiles" "$old_profiles"
+          sync_profiles() {
+            cp -n "$old_profiles"/*.mobileprovision "$new_profiles"/ 2>/dev/null || true
+            cp -n "$new_profiles"/*.mobileprovision "$old_profiles"/ 2>/dev/null || true
+          }
+          for attempt in 1 2; do
+            log="$RUNNER_TEMP/xcodebuild-archive-$attempt.log"
+            if xcodebuild "${args[@]}" 2>&1 | tee "$log" | format; then
+              break
+            fi
+            # On a first run, Xcode can reference a provisioning profile that it has just
+            # created before the file is on disk. The second attempt finds it.
+            if [ "$attempt" -eq 1 ] && grep -q "Build input file cannot be found: .*Provisioning Profiles" "$log"; then
+              echo "::warning::A provisioning profile created during the build was not on disk yet; archiving again."
+              sleep 5
+              sync_profiles
+              ls -l "$new_profiles" "$old_profiles" || true
+              continue
+            fi
+            exit 1
+          done
 
       - name: Export Ad Hoc IPA
         if: steps.signing.outputs.signed == 'true'
