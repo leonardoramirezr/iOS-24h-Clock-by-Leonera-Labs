@@ -92,7 +92,13 @@ struct ClockWidgetView: View {
     }
 
     private func dial(style: ClockFaceStyle) -> some View {
-        ClockFaceView(date: entry.date, daylight: daylight, segments: segments, style: style)
+        ClockFaceView(
+            date: entry.date,
+            daylight: daylight,
+            segments: segments,
+            style: style,
+            currentTimeAtTop: entry.snapshot.dial.currentTimeAtTop
+        )
             .shadow(color: Color.black.opacity(0.2), radius: 3, y: 1)
     }
 

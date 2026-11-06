@@ -10,6 +10,9 @@ SwiftUI and WidgetKit and has no third-party dependencies.
 
 - **24-hour dial on launch.** 24 is at the top, 6 (6 AM) on the right, 12 (12 PM) at the
   bottom and 18 (6 PM) on the left. A single hand shows the current time.
+- **Current time at top (optional).** Turn on Settings › Dial › Current time at top and the
+  dial turns so the hand always points up: the hours, the sky and the events move
+  counterclockwise as the day goes by. The widgets follow the same setting.
 - **Day and night.** The dial is dark for night hours and light for day hours, with a
   warm blend around sunrise and sunset. A sun marks midday and a moon marks midnight.
   Sunrise and sunset come from one of two sources:

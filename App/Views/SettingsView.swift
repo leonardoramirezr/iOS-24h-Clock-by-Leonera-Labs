@@ -1,7 +1,7 @@
 import SwiftUI
 import UIKit
 
-/// Sunrise and sunset preferences and information about the app.
+/// Dial, sunrise and sunset preferences and information about the app.
 struct SettingsView: View {
     @EnvironmentObject private var store: EventStore
     @EnvironmentObject private var locationService: LocationService
@@ -11,6 +11,14 @@ struct SettingsView: View {
     var body: some View {
         NavigationStack {
             Form {
+                Section {
+                    Toggle("Current time at top", isOn: currentTimeAtTop)
+                } header: {
+                    Text("Dial")
+                } footer: {
+                    Text("The dial turns so the current time is always at the top, as if the clock moved counterclockwise.")
+                }
+
                 Section {
                     Picker("Source", selection: settings.source) {
                         Text("Manual").tag(DaylightSettings.Source.manual)
@@ -102,6 +110,17 @@ struct SettingsView: View {
         Binding(
             get: { store.daylightSettings },
             set: { store.updateDaylight($0) }
+        )
+    }
+
+    private var currentTimeAtTop: Binding<Bool> {
+        Binding(
+            get: { store.dialSettings.currentTimeAtTop },
+            set: { isOn in
+                var updated = store.dialSettings
+                updated.currentTimeAtTop = isOn
+                store.updateDial(updated)
+            }
         )
     }
 

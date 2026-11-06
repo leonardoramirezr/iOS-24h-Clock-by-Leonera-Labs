@@ -7,6 +7,8 @@ struct DialSectorShape: Shape {
     var endHour: Double
     var innerRadius: CGFloat
     var outerRadius: CGFloat
+    /// The hour at the top of the dial (see `DialGeometry`).
+    var topHour: Double = 0
 
     func path(in rect: CGRect) -> Path {
         let center = CGPoint(x: rect.midX, y: rect.midY)
@@ -16,7 +18,7 @@ struct DialSectorShape: Shape {
         var path = Path()
         for step in 0...steps {
             let hour = startHour + span * Double(step) / Double(steps)
-            let point = DialGeometry.point(hour: hour, radius: radius * outerRadius, center: center)
+            let point = DialGeometry.point(hour: hour, radius: radius * outerRadius, center: center, topHour: topHour)
             if step == 0 {
                 path.move(to: point)
             } else {
@@ -28,7 +30,12 @@ struct DialSectorShape: Shape {
         } else {
             for step in stride(from: steps, through: 0, by: -1) {
                 let hour = startHour + span * Double(step) / Double(steps)
-                path.addLine(to: DialGeometry.point(hour: hour, radius: radius * innerRadius, center: center))
+                path.addLine(to: DialGeometry.point(
+                    hour: hour,
+                    radius: radius * innerRadius,
+                    center: center,
+                    topHour: topHour
+                ))
             }
         }
         path.closeSubpath()
@@ -43,6 +50,8 @@ struct DialTicksShape: Shape {
     var outerRadius: CGFloat
     /// Leaves out every tick whose index is a multiple of this value (0 keeps all of them).
     var skipping: Int = 0
+    /// The hour at the top of the dial (see `DialGeometry`).
+    var topHour: Double = 0
 
     func path(in rect: CGRect) -> Path {
         let center = CGPoint(x: rect.midX, y: rect.midY)
@@ -51,8 +60,8 @@ struct DialTicksShape: Shape {
         for index in 0..<count {
             if skipping > 0 && index % skipping == 0 { continue }
             let hour = Double(index) * 24 / Double(count)
-            path.move(to: DialGeometry.point(hour: hour, radius: radius * innerRadius, center: center))
-            path.addLine(to: DialGeometry.point(hour: hour, radius: radius * outerRadius, center: center))
+            path.move(to: DialGeometry.point(hour: hour, radius: radius * innerRadius, center: center, topHour: topHour))
+            path.addLine(to: DialGeometry.point(hour: hour, radius: radius * outerRadius, center: center, topHour: topHour))
         }
         return path
     }
@@ -62,13 +71,15 @@ struct DialTicksShape: Shape {
 struct DialHandShape: Shape {
     var hour: Double
     var length: CGFloat
+    /// The hour at the top of the dial (see `DialGeometry`).
+    var topHour: Double = 0
 
     func path(in rect: CGRect) -> Path {
         let center = CGPoint(x: rect.midX, y: rect.midY)
         let radius = min(rect.width, rect.height) / 2
         var path = Path()
         path.move(to: center)
-        path.addLine(to: DialGeometry.point(hour: hour, radius: radius * length, center: center))
+        path.addLine(to: DialGeometry.point(hour: hour, radius: radius * length, center: center, topHour: topHour))
         return path
     }
 }

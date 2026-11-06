@@ -66,3 +66,6 @@
 "Until %@" = "Hasta las %@";
 "Next at %@" = "Siguiente a las %@";
 "No more events today" = "No hay más eventos hoy";
+"Dial" = "Esfera";
+"Current time at top" = "Hora actual arriba";
+"The dial turns so the current time is always at the top, as if the clock moved counterclockwise." = "La esfera gira para que la hora actual quede siempre arriba, como si el reloj avanzara en sentido antihorario.";

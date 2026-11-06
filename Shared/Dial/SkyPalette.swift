@@ -24,17 +24,25 @@ enum SkyPalette {
         daylight.brightness(atHour: hour) > 0.5 ? dayInk : nightInk
     }
 
-    /// Sky gradient around the dial, starting at midnight (top) and going clockwise.
-    static func skyGradient(for daylight: Daylight) -> AngularGradient {
-        angularGradient { hour in sky(atHour: hour, daylight: daylight) }
+    /// Sky gradient around the dial, starting at `topHour` (top) and going clockwise.
+    static func skyGradient(for daylight: Daylight, topHour: Double = 0) -> AngularGradient {
+        angularGradient(topHour: topHour) { hour in sky(atHour: hour, daylight: daylight) }
     }
 
     /// Ink gradient around the dial, for tick marks.
-    static func inkGradient(for daylight: Daylight) -> AngularGradient {
-        angularGradient { hour in nightInk.mixed(with: dayInk, amount: daylight.brightness(atHour: hour)) }
+    static func inkGradient(for daylight: Daylight, topHour: Double = 0) -> AngularGradient {
+        angularGradient(topHour: topHour) { hour in
+            nightInk.mixed(with: dayInk, amount: daylight.brightness(atHour: hour))
+        }
     }
 
-    private static func angularGradient(samples: Int = 96, color: (Double) -> RGBColor) -> AngularGradient {
+    /// A gradient whose stops are hours of the day: hour 0 sits `topHour` hours
+    /// counterclockwise from the top of the dial.
+    private static func angularGradient(
+        samples: Int = 96,
+        topHour: Double,
+        color: (Double) -> RGBColor
+    ) -> AngularGradient {
         var stops: [Gradient.Stop] = []
         for index in 0...samples {
             let location = Double(index) / Double(samples)
@@ -43,8 +51,8 @@ enum SkyPalette {
         return AngularGradient(
             gradient: Gradient(stops: stops),
             center: .center,
-            startAngle: .degrees(-90),
-            endAngle: .degrees(270)
+            startAngle: .degrees(-90 - topHour * 15),
+            endAngle: .degrees(270 - topHour * 15)
         )
     }
 }

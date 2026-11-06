@@ -2,12 +2,15 @@ import SwiftUI
 
 /// The circular 24-hour clock: the sky (day and night) around the dial, events as pie slices
 /// and a single hand for the current time. 24 is at the top, 6 on the right, 12 at the bottom
-/// and 18 on the left.
+/// and 18 on the left, unless `currentTimeAtTop` turns the dial so the hand always points up.
 struct ClockFaceView: View {
     let date: Date
     let daylight: Daylight
     let segments: [EventSegment]
     var style: ClockFaceStyle = .full
+    /// Turns the dial so the current time stays at the top: the hand points up and the hours
+    /// move counterclockwise as the day goes by.
+    var currentTimeAtTop: Bool = false
     /// Called when the user taps an event slice. Ignored in widgets.
     var onSelectEvent: ((ClockEvent) -> Void)? = nil
 
@@ -24,6 +27,11 @@ struct ClockFaceView: View {
         .accessibilityValue(Text(verbatim: TimeText.string(date: date)))
     }
 
+    /// The hour drawn at the top of the dial.
+    private var topHour: Double {
+        currentTimeAtTop ? date.hourOfDay() : 0
+    }
+
     private func dial(side: CGFloat) -> some View {
         let radius = side / 2
         let center = CGPoint(x: radius, y: radius)
@@ -34,7 +42,7 @@ struct ClockFaceView: View {
         )
         return ZStack {
             Circle()
-                .fill(SkyPalette.skyGradient(for: daylight))
+                .fill(SkyPalette.skyGradient(for: daylight, topHour: topHour))
             if style.showsSkyIcons {
                 skyIcons(radius: radius, center: center)
             }
@@ -51,7 +59,7 @@ struct ClockFaceView: View {
         .contentShape(Circle())
         .onTapGesture { location in
             guard let onSelectEvent = onSelectEvent else { return }
-            let polar = DialGeometry.polar(of: location, center: center, radius: radius)
+            let polar = DialGeometry.polar(of: location, center: center, radius: radius, topHour: topHour)
             if let slice = SliceLayout.slice(atHour: polar.hour, distance: polar.distance, in: slices) {
                 onSelectEvent(slice.segment.event)
             }
@@ -68,13 +76,23 @@ struct ClockFaceView: View {
             Image(systemName: "sun.max.fill")
                 .font(.system(size: iconSize))
                 .foregroundStyle(SkyPalette.sun.color)
-                .position(DialGeometry.point(hour: daylight.middayHour, radius: iconRadius, center: center))
+                .position(DialGeometry.point(
+                    hour: daylight.middayHour,
+                    radius: iconRadius,
+                    center: center,
+                    topHour: topHour
+                ))
         }
         if daylight.dayLength < 24 {
             Image(systemName: "moon.stars.fill")
                 .font(.system(size: iconSize))
                 .foregroundStyle(SkyPalette.moon.color)
-                .position(DialGeometry.point(hour: daylight.midnightHour, radius: iconRadius, center: center))
+                .position(DialGeometry.point(
+                    hour: daylight.midnightHour,
+                    radius: iconRadius,
+                    center: center,
+                    topHour: topHour
+                ))
         }
     }
 
@@ -84,7 +102,8 @@ struct ClockFaceView: View {
                 startHour: slice.startHour,
                 endHour: slice.endHour,
                 innerRadius: slice.innerRadius,
-                outerRadius: slice.outerRadius
+                outerRadius: slice.outerRadius,
+                topHour: topHour
             )
             shape
                 .fill(slice.segment.event.color.color.opacity(0.9))
@@ -95,16 +114,16 @@ struct ClockFaceView: View {
     }
 
     private func ticks(radius: CGFloat) -> some View {
-        let ink = SkyPalette.inkGradient(for: daylight)
+        let ink = SkyPalette.inkGradient(for: daylight, topHour: topHour)
         return ZStack {
             if style.showsMinorTicks {
-                DialTicksShape(count: 96, innerRadius: 0.955, outerRadius: 0.985, skipping: 4)
+                DialTicksShape(count: 96, innerRadius: 0.955, outerRadius: 0.985, skipping: 4, topHour: topHour)
                     .stroke(ink, lineWidth: max(0.5, radius * 0.005))
                     .opacity(0.6)
             }
-            DialTicksShape(count: 24, innerRadius: 0.925, outerRadius: 0.985, skipping: 6)
+            DialTicksShape(count: 24, innerRadius: 0.925, outerRadius: 0.985, skipping: 6, topHour: topHour)
                 .stroke(ink, lineWidth: max(0.75, radius * 0.011))
-            DialTicksShape(count: 4, innerRadius: 0.895, outerRadius: 0.985)
+            DialTicksShape(count: 4, innerRadius: 0.895, outerRadius: 0.985, topHour: topHour)
                 .stroke(ink, lineWidth: max(1, radius * 0.022))
         }
     }
@@ -120,7 +139,12 @@ struct ClockFaceView: View {
                 ))
                 .monospacedDigit()
                 .foregroundStyle(SkyPalette.ink(atHour: Double(hour), daylight: daylight).color)
-                .position(DialGeometry.point(hour: Double(hour), radius: radius * style.labelRadius, center: center))
+                .position(DialGeometry.point(
+                    hour: Double(hour),
+                    radius: radius * style.labelRadius,
+                    center: center,
+                    topHour: topHour
+                ))
         }
     }
 
@@ -147,7 +171,12 @@ struct ClockFaceView: View {
                 .minimumScaleFactor(0.5)
                 .foregroundStyle(slice.segment.event.color.prefersDarkText ? SkyPalette.dayInk.color : Color.white)
                 .frame(width: width)
-                .position(DialGeometry.point(hour: slice.midHour, radius: bandRadius * radius, center: center))
+                .position(DialGeometry.point(
+                    hour: slice.midHour,
+                    radius: bandRadius * radius,
+                    center: center,
+                    topHour: topHour
+                ))
         }
     }
 
@@ -155,12 +184,12 @@ struct ClockFaceView: View {
         let hour = date.hourOfDay()
         let width = radius * style.handWidth
         let outline = width + max(1.5, radius * 0.014)
-        let tip = DialGeometry.point(hour: hour, radius: radius * 0.9, center: center)
+        let tip = DialGeometry.point(hour: hour, radius: radius * 0.9, center: center, topHour: topHour)
         let handColor = SkyPalette.hand.color
         return ZStack {
-            DialHandShape(hour: hour, length: 0.9)
+            DialHandShape(hour: hour, length: 0.9, topHour: topHour)
                 .stroke(Color.white.opacity(0.9), style: StrokeStyle(lineWidth: outline, lineCap: .round))
-            DialHandShape(hour: hour, length: 0.9)
+            DialHandShape(hour: hour, length: 0.9, topHour: topHour)
                 .stroke(handColor, style: StrokeStyle(lineWidth: width, lineCap: .round))
             Circle()
                 .fill(handColor)
