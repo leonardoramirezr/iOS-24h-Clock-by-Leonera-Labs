@@ -169,10 +169,11 @@ jobs:
             if xcodebuild "${args[@]}" 2>&1 | tee "$log" | format; then
               break
             fi
-            # On a first run, Xcode can reference a provisioning profile that it has just
-            # created before the file is on disk. The second attempt finds it.
+            # Every run gets a new development certificate, so Xcode regenerates the
+            # profiles and can reference one before the file is on disk. The second
+            # attempt finds it.
             if [ "$attempt" -eq 1 ] && grep -q "Build input file cannot be found: .*Provisioning Profiles" "$log"; then
-              echo "::warning::A provisioning profile created during the build was not on disk yet; archiving again."
+              echo "::notice::A provisioning profile created during the build was not on disk yet; archiving again."
               sleep 5
               sync_profiles
               ls -l "$new_profiles" "$old_profiles" || true
