@@ -1,0 +1,392 @@
+# Builds every push, signs it Ad Hoc and publishes the IPA on GitHub Pages so it can be
+# installed from Safari on a registered iPhone. See README.md › Continuous delivery.
+name: Build
+
+on:
+  push:
+    branches: ['**', '!gh-pages']
+  workflow_dispatch:
+
+# Never cancel a build: main builds wait for each other, every other run has its own group.
+concurrency:
+  group: ${{ github.ref == 'refs/heads/main' && 'main' || github.run_id }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write # tags, releases and the gh-pages branch
+  pages: read # gh api repos/{repo}/pages
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  APP_BUNDLE_ID: com.leonardoramirezr.24hclock
+  WIDGET_BUNDLE_ID: com.leonardoramirezr.24hclock.widget
+  PROJECT: Clock24.xcodeproj
+  SCHEME: Clock24
+  APP_NAME: Clock24
+
+jobs:
+  build:
+    name: Build, sign and publish
+    runs-on: macos-15
+    timeout-minutes: 60
+    env:
+      ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+      ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+      ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+      APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+
+    steps:
+      - name: Check out
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Check signing secrets
+        id: signing
+        run: |
+          present=0
+          missing=""
+          for name in ASC_KEY_ID ASC_ISSUER_ID ASC_KEY_P8 APPLE_TEAM_ID; do
+            if [ -n "${!name}" ]; then present=$((present + 1)); else missing="$missing $name"; fi
+          done
+          if [ "$present" -eq 0 ]; then
+            echo "::notice::No signing secrets are configured, so this run builds an unsigned IPA (not installable from Pages)."
+            echo "signed=false" >> "$GITHUB_OUTPUT"
+          elif [ -n "$missing" ]; then
+            echo "::error::Incomplete signing secrets, missing:$missing. Add all of ASC_KEY_ID, ASC_ISSUER_ID, ASC_KEY_P8 and APPLE_TEAM_ID as repository secrets (Settings › Secrets and variables › Actions), or remove all of them to build unsigned."
+            exit 1
+          else
+            echo "signed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Resolve tag and version
+        id: meta
+        run: |
+          git fetch --force --tags --quiet origin
+          sha7="$(git rev-parse --short=7 HEAD)"
+          last_minor="$( (git tag --list | grep -E '^0\.[0-9]+\.0$' || true) | cut -d. -f2 | sort -n | tail -1)"
+          last_minor="${last_minor:-0}"
+          if [ "$GITHUB_REF" = "refs/heads/main" ]; then
+            # A re-run of the same commit reuses its tag instead of skipping a version.
+            tag="$( (git tag --points-at HEAD | grep -E '^0\.[0-9]+\.0$' || true) | head -1)"
+            tag="${tag:-0.$((last_minor + 1)).0}"
+            channel=stable
+            version="$tag"
+          else
+            tag="build-${GITHUB_RUN_NUMBER}-${sha7}"
+            channel=branch
+            version="0.${last_minor}.${GITHUB_RUN_NUMBER}"
+          fi
+          delimiter="EOF_$(uuidgen)"
+          {
+            echo "tag=$tag"
+            echo "channel=$channel"
+            echo "version=$version"
+            echo "build_number=$GITHUB_RUN_NUMBER"
+            echo "sha7=$sha7"
+            echo "commit_title<<$delimiter"
+            git log -1 --format=%s
+            echo "$delimiter"
+          } >> "$GITHUB_OUTPUT"
+          echo "ARCHIVE_PATH=$RUNNER_TEMP/$APP_NAME.xcarchive" >> "$GITHUB_ENV"
+          echo "Tag $tag ($channel), version $version ($GITHUB_RUN_NUMBER)"
+
+      - name: Show Xcode version
+        run: |
+          xcodebuild -version
+          echo "iOS SDK $(xcrun --sdk iphoneos --show-sdk-version)"
+
+      - name: Install XcodeGen
+        run: |
+          if ! command -v xcodegen >/dev/null 2>&1; then
+            HOMEBREW_NO_AUTO_UPDATE=1 HOMEBREW_NO_INSTALL_CLEANUP=1 brew install xcodegen
+          fi
+          xcodegen --version
+
+      - name: Generate Xcode project
+        run: xcodegen generate --spec project.yml
+
+      - name: Prepare App Store Connect API key
+        if: steps.signing.outputs.signed == 'true'
+        run: |
+          key_path="$RUNNER_TEMP/asc/AuthKey_${ASC_KEY_ID}.p8"
+          python3 scripts/asc.py write-key "$key_path"
+          echo "ASC_KEY_PATH=$key_path" >> "$GITHUB_ENV"
+
+      - name: Validate App Store Connect access
+        if: steps.signing.outputs.signed == 'true'
+        run: python3 scripts/asc.py check
+
+      - name: Record existing development certificates
+        if: steps.signing.outputs.signed == 'true'
+        run: |
+          python3 scripts/asc.py keychain-dev-serials > "$RUNNER_TEMP/dev-certs-before.txt"
+          echo "Apple Development certificates in the keychain before the build: $(wc -l < "$RUNNER_TEMP/dev-certs-before.txt" | tr -d ' ')"
+
+      - name: Archive
+        env:
+          SIGNED: ${{ steps.signing.outputs.signed }}
+          VERSION: ${{ steps.meta.outputs.version }}
+          BUILD_NUMBER: ${{ steps.meta.outputs.build_number }}
+        run: |
+          args=(archive
+            -project "$PROJECT"
+            -scheme "$SCHEME"
+            -configuration Release
+            -destination 'generic/platform=iOS'
+            -archivePath "$ARCHIVE_PATH")
+          if [ "$SIGNED" = true ]; then
+            # Automatic signing: Xcode registers the App IDs and creates the profiles.
+            args+=(-allowProvisioningUpdates
+              -authenticationKeyPath "$ASC_KEY_PATH"
+              -authenticationKeyID "$ASC_KEY_ID"
+              -authenticationKeyIssuerID "$ASC_ISSUER_ID"
+              DEVELOPMENT_TEAM="$APPLE_TEAM_ID"
+              CODE_SIGN_STYLE=Automatic)
+          else
+            args+=(CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY= DEVELOPMENT_TEAM=)
+          fi
+          args+=(APP_BUNDLE_ID="$APP_BUNDLE_ID"
+            WIDGET_BUNDLE_ID="$WIDGET_BUNDLE_ID"
+            MARKETING_VERSION="$VERSION"
+            CURRENT_PROJECT_VERSION="$BUILD_NUMBER")
+          format() { if command -v xcbeautify >/dev/null 2>&1; then xcbeautify --renderer github-actions; else cat; fi; }
+          # Xcode 16 keeps profiles in UserData; older tools use MobileDevice. Keep both in sync.
+          new_profiles="$HOME/Library/Developer/Xcode/UserData/Provisioning Profiles"
+          old_profiles="$HOME/Library/MobileDevice/Provisioning Profiles"
+          mkdir -p "$new_profiles" "$old_profiles"
+          sync_profiles() {
+            cp -n "$old_profiles"/*.mobileprovision "$new_profiles"/ 2>/dev/null || true
+            cp -n "$new_profiles"/*.mobileprovision "$old_profiles"/ 2>/dev/null || true
+          }
+          for attempt in 1 2; do
+            log="$RUNNER_TEMP/xcodebuild-archive-$attempt.log"
+            if xcodebuild "${args[@]}" 2>&1 | tee "$log" | format; then
+              break
+            fi
+            # Every run gets a new development certificate, so Xcode regenerates the
+            # profiles and can reference one before the file is on disk. The second
+            # attempt finds it.
+            if [ "$attempt" -eq 1 ] && grep -q "Build input file cannot be found: .*Provisioning Profiles" "$log"; then
+              echo "::notice::A provisioning profile created during the build was not on disk yet; archiving again."
+              sleep 5
+              sync_profiles
+              ls -l "$new_profiles" "$old_profiles" || true
+              continue
+            fi
+            exit 1
+          done
+
+      - name: Export Ad Hoc IPA
+        if: steps.signing.outputs.signed == 'true'
+        run: |
+          options="$RUNNER_TEMP/ExportOptions.plist"
+          cat > "$options" <<EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key>
+            <string>release-testing</string>
+            <key>signingStyle</key>
+            <string>automatic</string>
+            <key>teamID</key>
+            <string>${APPLE_TEAM_ID}</string>
+            <key>stripSwiftSymbols</key>
+            <true/>
+            <key>thinning</key>
+            <string>&lt;none&gt;</string>
+          </dict>
+          </plist>
+          EOF
+          plutil -lint "$options"
+          format() { if command -v xcbeautify >/dev/null 2>&1; then xcbeautify --renderer github-actions; else cat; fi; }
+          xcodebuild -exportArchive \
+            -archivePath "$ARCHIVE_PATH" \
+            -exportPath "$RUNNER_TEMP/export" \
+            -exportOptionsPlist "$options" \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$ASC_KEY_PATH" \
+            -authenticationKeyID "$ASC_KEY_ID" \
+            -authenticationKeyIssuerID "$ASC_ISSUER_ID" \
+            2>&1 | tee "$RUNNER_TEMP/xcodebuild-export.log" | format
+          ipa="$(find "$RUNNER_TEMP/export" -maxdepth 1 -name '*.ipa' | head -1)"
+          if [ -z "$ipa" ]; then
+            echo "::error::xcodebuild -exportArchive did not produce an IPA"
+            exit 1
+          fi
+          echo "IPA_PATH=$ipa" >> "$GITHUB_ENV"
+
+      - name: Verify Ad Hoc provisioning profiles
+        id: profiles
+        if: steps.signing.outputs.signed == 'true'
+        run: python3 scripts/verify-ipa.py "$IPA_PATH"
+
+      - name: Package unsigned IPA
+        if: steps.signing.outputs.signed != 'true'
+        run: |
+          staging="$RUNNER_TEMP/unsigned"
+          mkdir -p "$staging/Payload"
+          cp -R "$ARCHIVE_PATH/Products/Applications/$APP_NAME.app" "$staging/Payload/"
+          (cd "$staging" && zip -qry "$APP_NAME-unsigned.ipa" Payload)
+          echo "IPA_PATH=$staging/$APP_NAME-unsigned.ipa" >> "$GITHUB_ENV"
+
+      - name: Read app metadata
+        id: app
+        run: |
+          plist="$ARCHIVE_PATH/Products/Applications/$APP_NAME.app/Info.plist"
+          read_key() { /usr/libexec/PlistBuddy -c "Print :$1" "$plist"; }
+          {
+            echo "bundle_id=$(read_key CFBundleIdentifier)"
+            echo "display_name=$(read_key CFBundleDisplayName)"
+            echo "version=$(read_key CFBundleShortVersionString)"
+            echo "build=$(read_key CFBundleVersion)"
+          } >> "$GITHUB_OUTPUT"
+          echo "IPA: $IPA_PATH ($(du -h "$IPA_PATH" | cut -f1))"
+
+      - name: Upload IPA artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: ${{ steps.meta.outputs.tag }}${{ steps.signing.outputs.signed != 'true' && '-unsigned' || '' }}
+          path: ${{ env.IPA_PATH }}
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Prepare install icons
+        if: steps.signing.outputs.signed == 'true'
+        run: |
+          source_icon="App/Assets.xcassets/AppIcon.appiconset/AppIcon.png"
+          sips -z 57 57 "$source_icon" --out "$RUNNER_TEMP/icon-57.png" > /dev/null
+          sips -z 512 512 "$source_icon" --out "$RUNNER_TEMP/icon-512.png" > /dev/null
+
+      - name: Publish to GitHub Pages
+        id: pages
+        if: steps.signing.outputs.signed == 'true'
+        env:
+          TAG: ${{ steps.meta.outputs.tag }}
+          CHANNEL: ${{ steps.meta.outputs.channel }}
+          ICON_57: ${{ runner.temp }}/icon-57.png
+          ICON_512: ${{ runner.temp }}/icon-512.png
+          BUNDLE_ID: ${{ steps.app.outputs.bundle_id }}
+          APP_TITLE: ${{ steps.app.outputs.display_name }}
+          APP_VERSION: ${{ steps.app.outputs.version }}
+          BUILD_NUMBER: ${{ steps.app.outputs.build }}
+          COMMIT_SHA: ${{ github.sha }}
+          COMMIT_TITLE: ${{ steps.meta.outputs.commit_title }}
+          BRANCH: ${{ github.ref_name }}
+          DEVICE_COUNT: ${{ steps.profiles.outputs.device_count }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: bash scripts/publish-pages.sh
+
+      - name: Create GitHub release
+        if: steps.signing.outputs.signed == 'true'
+        env:
+          TAG: ${{ steps.meta.outputs.tag }}
+          CHANNEL: ${{ steps.meta.outputs.channel }}
+          VERSION: ${{ steps.app.outputs.version }}
+          BUILD_NUMBER: ${{ steps.app.outputs.build }}
+          COMMIT_TITLE: ${{ steps.meta.outputs.commit_title }}
+          PAGE_URL: ${{ steps.pages.outputs.page_url }}
+          DEVICE_COUNT: ${{ steps.profiles.outputs.device_count }}
+        run: |
+          asset="$RUNNER_TEMP/$APP_NAME-$TAG.ipa"
+          cp "$IPA_PATH" "$asset"
+          notes="$RUNNER_TEMP/release-notes.md"
+          {
+            echo "**$COMMIT_TITLE**"
+            echo
+            echo "📲 **Install:** open $PAGE_URL in Safari on a registered iPhone and tap **Install on iPhone**."
+            echo
+            echo "| | |"
+            echo "|---|---|"
+            echo "| Version | $VERSION ($BUILD_NUMBER) |"
+            echo "| Branch | \`$GITHUB_REF_NAME\` |"
+            echo "| Commit | $GITHUB_SHA |"
+            echo "| Devices in the Ad Hoc profile | $DEVICE_COUNT |"
+          } > "$notes"
+          if [ "$CHANNEL" = stable ]; then
+            flags=(--latest)
+          else
+            flags=(--prerelease --latest=false)
+          fi
+          if gh release view "$TAG" > /dev/null 2>&1; then
+            gh release upload "$TAG" "$asset" --clobber
+            gh release edit "$TAG" --notes-file "$notes" "${flags[@]}"
+          else
+            gh release create "$TAG" "$asset" --target "$GITHUB_SHA" --title "$TAG" --notes-file "$notes" "${flags[@]}"
+          fi
+
+      - name: Show build errors
+        if: failure()
+        run: |
+          for log in "$RUNNER_TEMP"/xcodebuild-*.log; do
+            [ -f "$log" ] || continue
+            echo "::group::$(basename "$log"): errors"
+            grep -nE "error:|: error|Error Domain|No profiles|provisioning profile|requires a development team|Signing for" "$log" | head -150 || true
+            echo "::endgroup::"
+            echo "::group::$(basename "$log"): last 100 lines"
+            tail -100 "$log"
+            echo "::endgroup::"
+          done
+
+      - name: Upload build logs
+        if: failure()
+        uses: actions/upload-artifact@v6
+        with:
+          name: logs-${{ github.run_number }}
+          path: ${{ runner.temp }}/xcodebuild-*.log
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Write job summary
+        if: always()
+        env:
+          TAG: ${{ steps.meta.outputs.tag }}
+          CHANNEL: ${{ steps.meta.outputs.channel }}
+          SIGNED: ${{ steps.signing.outputs.signed }}
+          VERSION: ${{ steps.app.outputs.version }}
+          BUILD_NUMBER: ${{ steps.app.outputs.build }}
+          COMMIT_TITLE: ${{ steps.meta.outputs.commit_title }}
+          PAGE_URL: ${{ steps.pages.outputs.page_url }}
+          PAGES_ENABLED: ${{ steps.pages.outputs.pages_enabled }}
+          DEVICE_COUNT: ${{ steps.profiles.outputs.device_count }}
+          JOB_STATUS: ${{ job.status }}
+        run: |
+          {
+            echo "## 24H Clock · \`${TAG:-unknown}\`"
+            echo
+            echo "**${COMMIT_TITLE}** (\`${GITHUB_SHA:0:7}\` on \`$GITHUB_REF_NAME\`)"
+            echo
+            if [ "$JOB_STATUS" != success ]; then
+              echo "❌ The build failed; see the logs of the failed step."
+            elif [ "$SIGNED" != true ]; then
+              echo "⚠️ Unsigned build (no signing secrets). Download the IPA from the artifacts of this run; it cannot be installed from Safari."
+            else
+              echo "### 📲 [Install on iPhone]($PAGE_URL)"
+              echo
+              echo "Open the link in Safari on a registered iPhone and tap **Install on iPhone**."
+              if [ "$PAGES_ENABLED" != true ]; then
+                echo
+                echo "> GitHub Pages is not enabled yet: Settings › Pages › Deploy from a branch › \`gh-pages\` / \`(root)\`."
+              fi
+              echo
+              echo "| | |"
+              echo "|---|---|"
+              echo "| Channel | $([ "$CHANNEL" = stable ] && echo 'Stable release (Latest)' || echo 'Pre-release') |"
+              echo "| Version | $VERSION ($BUILD_NUMBER) |"
+              echo "| Devices in the Ad Hoc profile | $DEVICE_COUNT |"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Revoke temporary development certificate
+        if: always() && steps.signing.outputs.signed == 'true'
+        run: python3 scripts/asc.py revoke-new-dev-certs --before "$RUNNER_TEMP/dev-certs-before.txt"
+
+      - name: Remove API key
+        if: always()
+        run: rm -rf "$RUNNER_TEMP/asc"

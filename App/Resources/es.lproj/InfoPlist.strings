@@ -1,0 +1,5 @@
+/* Localized Info.plist values. */
+
+"CFBundleDisplayName" = "24H Clock by Leonera Labs";
+"CFBundleName" = "24H Clock";
+"NSLocationWhenInUseUsageDescription" = "Tu ubicación aproximada se usa para calcular las horas locales de amanecer y atardecer.";
