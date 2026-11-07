@@ -83,3 +83,21 @@ struct DialHandShape: Shape {
         return path
     }
 }
+
+/// A straight line along the radius at `hour`, between two radii (fractions of the dial radius).
+struct DialRadialLineShape: Shape {
+    var hour: Double
+    var innerRadius: CGFloat
+    var outerRadius: CGFloat
+    /// The hour at the top of the dial (see `DialGeometry`).
+    var topHour: Double = 0
+
+    func path(in rect: CGRect) -> Path {
+        let center = CGPoint(x: rect.midX, y: rect.midY)
+        let radius = min(rect.width, rect.height) / 2
+        var path = Path()
+        path.move(to: DialGeometry.point(hour: hour, radius: radius * innerRadius, center: center, topHour: topHour))
+        path.addLine(to: DialGeometry.point(hour: hour, radius: radius * outerRadius, center: center, topHour: topHour))
+        return path
+    }
+}

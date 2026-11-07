@@ -16,7 +16,7 @@ struct SettingsView: View {
                 } header: {
                     Text("Dial")
                 } footer: {
-                    Text("The dial turns so the current time is always at the top, as if the clock moved counterclockwise.")
+                    Text("The dial turns so the current time is always at the top. The quarter between the left and the top shows the last 6 hours, and the next 18 hours follow clockwise from the top. When this is off, swipe the clock from right to left to see the next days.")
                 }
 
                 Section {

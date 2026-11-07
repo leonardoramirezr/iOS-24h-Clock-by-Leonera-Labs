@@ -10,9 +10,16 @@ SwiftUI and WidgetKit and has no third-party dependencies.
 
 - **24-hour dial on launch.** 24 is at the top, 6 (6 AM) on the right, 12 (12 PM) at the
   bottom and 18 (6 PM) on the left. A single hand shows the current time.
+- **Other days.** Swipe the clock from right to left to see the next days, and from left
+  to right to go back (down to today). The arrows next to the date and the Today button do
+  the same. On other days the hand is hidden and the list shows that day's events.
 - **Current time at top (optional).** Turn on Settings › Dial › Current time at top and the
   dial turns so the hand always points up: the hours, the sky and the events move
-  counterclockwise as the day goes by. The widgets follow the same setting.
+  counterclockwise as the day goes by. The dial then covers a rolling window instead of
+  the calendar day: the quarter between the left and the top is the past (the last 6
+  hours, with faded events), and the next 18 hours run clockwise from the top, into
+  tomorrow if needed. A dashed line on the left marks where the window starts and ends.
+  The widgets follow the same setting. Swiping between days is off in this mode.
 - **Day and night.** The dial is dark for night hours and light for day hours, with a
   warm blend around sunrise and sunset. A sun marks midday and a moon marks midnight.
   Sunrise and sunset come from one of two sources:
