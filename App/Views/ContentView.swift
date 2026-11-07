@@ -163,7 +163,7 @@ struct ContentView: View {
             }
             .padding(.horizontal, 8)
             .offset(x: swipeOffset)
-            .opacity(1 - min(abs(swipeOffset) / 400, 0.5))
+            .opacity(swipeOpacity)
 
             VStack(spacing: 4) {
                 Group {
@@ -191,6 +191,12 @@ struct ContentView: View {
         }
         .contentShape(Rectangle())
         .simultaneousGesture(daySwipe, including: browsesDays ? .all : .subviews)
+    }
+
+    /// The clock fades a little while it is being swiped.
+    private var swipeOpacity: Double {
+        let fade = Double(abs(swipeOffset)) / 400
+        return 1 - min(fade, 0.5)
     }
 
     private func dateText(_ day: Date) -> some View {
