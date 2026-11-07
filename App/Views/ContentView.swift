@@ -101,7 +101,13 @@ struct ContentView: View {
 
     private func header(now: Date, daylight: Daylight, segments: [EventSegment]) -> some View {
         VStack(spacing: 14) {
-            ClockFaceView(date: now, daylight: daylight, segments: segments, style: .full) { event in
+            ClockFaceView(
+                date: now,
+                daylight: daylight,
+                segments: segments,
+                style: .full,
+                currentTimeAtTop: store.dialSettings.currentTimeAtTop
+            ) { event in
                 editorRequest = EditorRequest(event: event, isNew: false)
             }
             .padding(.horizontal, 8)

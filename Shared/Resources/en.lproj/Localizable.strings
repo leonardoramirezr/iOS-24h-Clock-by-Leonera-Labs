@@ -66,3 +66,6 @@
 "Until %@" = "Until %@";
 "Next at %@" = "Next at %@";
 "No more events today" = "No more events today";
+"Dial" = "Dial";
+"Current time at top" = "Current time at top";
+"The dial turns so the current time is always at the top, as if the clock moved counterclockwise." = "The dial turns so the current time is always at the top, as if the clock moved counterclockwise.";

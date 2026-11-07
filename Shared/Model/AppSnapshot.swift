@@ -4,21 +4,29 @@ import Foundation
 struct AppSnapshot: Codable, Hashable {
     var events: [ClockEvent]
     var daylight: DaylightSettings
+    var dial: DialSettings
 
-    init(events: [ClockEvent] = [], daylight: DaylightSettings = DaylightSettings()) {
+    init(
+        events: [ClockEvent] = [],
+        daylight: DaylightSettings = DaylightSettings(),
+        dial: DialSettings = DialSettings()
+    ) {
         self.events = events
         self.daylight = daylight
+        self.dial = dial
     }
 
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         events = (try? container.decode([ClockEvent].self, forKey: .events)) ?? []
         daylight = (try? container.decode(DaylightSettings.self, forKey: .daylight)) ?? DaylightSettings()
+        dial = (try? container.decode(DialSettings.self, forKey: .dial)) ?? DialSettings()
     }
 
     private enum CodingKeys: String, CodingKey {
         case events
         case daylight
+        case dial
     }
 
     static let empty = AppSnapshot()
