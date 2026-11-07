@@ -22,16 +22,21 @@ struct DialSettings: Codable, Hashable {
         case currentTimeAtTop
     }
 
-    /// The event segments the dial shows at `date`.
+    /// The segments of the user's events and the calendar events that the dial shows at `date`.
     ///
     /// With the current time at the top, the dial covers a rolling window: the last
     /// `pastHoursAtTop` hours and the next `24 - pastHoursAtTop` hours, which can span
     /// two calendar days. Otherwise it shows the calendar day of `date`, from 0 to 24.
-    func segments(for events: [ClockEvent], at date: Date, calendar: Calendar = .current) -> [EventSegment] {
+    func segments(
+        for events: [ClockEvent],
+        calendarEvents: [CalendarEvent] = [],
+        at date: Date,
+        calendar: Calendar = .current
+    ) -> [EventSegment] {
         guard currentTimeAtTop else {
-            return EventSegment.segments(for: events, on: date, calendar: calendar)
+            return EventSegment.segments(for: events, calendarEvents: calendarEvents, on: date, calendar: calendar)
         }
         let start = date.addingTimeInterval(-Self.pastHoursAtTop * 3600)
-        return EventSegment.segments(for: events, from: start, calendar: calendar)
+        return EventSegment.segments(for: events, calendarEvents: calendarEvents, from: start, calendar: calendar)
     }
 }

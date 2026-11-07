@@ -21,6 +21,16 @@ struct RGBColor: Hashable {
         )
     }
 
+    /// Converts a Core Graphics color (for example the color of a calendar) to sRGB.
+    init?(cgColor: CGColor) {
+        guard let space = CGColorSpace(name: CGColorSpace.sRGB),
+              let converted = cgColor.converted(to: space, intent: .defaultIntent, options: nil),
+              let components = converted.components,
+              components.count >= 3 else { return nil }
+        func clamped(_ value: CGFloat) -> Double { min(max(Double(value), 0), 1) }
+        self.init(red: clamped(components[0]), green: clamped(components[1]), blue: clamped(components[2]))
+    }
+
     /// Linear interpolation towards `other`; `amount` is clamped to `0...1`.
     func mixed(with other: RGBColor, amount: Double) -> RGBColor {
         let progress = min(max(amount, 0), 1)
