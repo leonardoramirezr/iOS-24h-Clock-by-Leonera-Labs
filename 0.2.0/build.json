@@ -1,0 +1,22 @@
+{
+  "tag": "0.2.0",
+  "channel": "stable",
+  "version": "0.2.0",
+  "build_number": "7",
+  "bundle_id": "com.leonardoramirezr.24hclock",
+  "app_name": "24H Clock by Leonera Labs",
+  "branch": "main",
+  "commit": "19d1b5518025664a31a7b09e457fc95165bc1745",
+  "commit_title": "Add a setting that keeps the current time at the top of the dial (#2)",
+  "run_url": "https://github.com/leonardoramirezr/iOS-24h-Clock-by-Leonera-Labs/actions/runs/42335017964",
+  "devices": "2",
+  "commit_short": "19d1b55",
+  "created_at": "2026-11-07T03:41:19Z",
+  "run_number": 7,
+  "ipa": "Clock24.ipa",
+  "ipa_size": 1320009,
+  "page_url": "https://leonardoramirezr.github.io/iOS-24h-Clock-by-Leonera-Labs/0.2.0/",
+  "manifest_url": "https://leonardoramirezr.github.io/iOS-24h-Clock-by-Leonera-Labs/0.2.0/manifest.plist",
+  "install_url": "itms-services://?action=download-manifest&url=https%3A%2F%2Fleonardoramirezr.github.io%2FiOS-24h-Clock-by-Leonera-Labs%2F0.2.0%2Fmanifest.plist",
+  "signed": true
+}

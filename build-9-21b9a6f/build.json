@@ -1,0 +1,22 @@
+{
+  "tag": "build-9-21b9a6f",
+  "channel": "branch",
+  "version": "0.2.9",
+  "build_number": "9",
+  "bundle_id": "com.leonardoramirezr.24hclock",
+  "app_name": "24H Clock by Leonera Labs",
+  "branch": "claude/wonderful-sagan-xrcj6s",
+  "commit": "21b9a6f6529f9e2c636da3f92985331535c9bd23",
+  "commit_title": "Fix the ambiguous division in the swipe fade",
+  "run_url": "https://github.com/leonardoramirezr/iOS-24h-Clock-by-Leonera-Labs/actions/runs/42337164983",
+  "devices": "2",
+  "commit_short": "21b9a6f",
+  "created_at": "2026-11-07T04:10:46Z",
+  "run_number": 9,
+  "ipa": "Clock24.ipa",
+  "ipa_size": 1344080,
+  "page_url": "https://leonardoramirezr.github.io/iOS-24h-Clock-by-Leonera-Labs/build-9-21b9a6f/",
+  "manifest_url": "https://leonardoramirezr.github.io/iOS-24h-Clock-by-Leonera-Labs/build-9-21b9a6f/manifest.plist",
+  "install_url": "itms-services://?action=download-manifest&url=https%3A%2F%2Fleonardoramirezr.github.io%2FiOS-24h-Clock-by-Leonera-Labs%2Fbuild-9-21b9a6f%2Fmanifest.plist",
+  "signed": true
+}

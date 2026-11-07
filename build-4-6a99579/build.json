@@ -1,0 +1,22 @@
+{
+  "tag": "build-4-6a99579",
+  "channel": "branch",
+  "version": "0.0.4",
+  "build_number": "4",
+  "bundle_id": "com.leonardoramirezr.24hclock",
+  "app_name": "24H Clock by Leonera Labs",
+  "branch": "claude/24h-clock-ios-cicd-ra1vhf",
+  "commit": "6a99579aa3b2506ea44fae9a8ce8f1d5ab5ba29a",
+  "commit_title": "Use upload-artifact v6, which runs on Node.js 24",
+  "run_url": "https://github.com/leonardoramirezr/iOS-24h-Clock-by-Leonera-Labs/actions/runs/42174510944",
+  "devices": "2",
+  "commit_short": "6a99579",
+  "created_at": "2026-11-06T06:28:38Z",
+  "run_number": 4,
+  "ipa": "Clock24.ipa",
+  "ipa_size": 1312156,
+  "page_url": "https://leonardoramirezr.github.io/iOS-24h-Clock-by-Leonera-Labs/build-4-6a99579/",
+  "manifest_url": "https://leonardoramirezr.github.io/iOS-24h-Clock-by-Leonera-Labs/build-4-6a99579/manifest.plist",
+  "install_url": "itms-services://?action=download-manifest&url=https%3A%2F%2Fleonardoramirezr.github.io%2FiOS-24h-Clock-by-Leonera-Labs%2Fbuild-4-6a99579%2Fmanifest.plist",
+  "signed": true
+}

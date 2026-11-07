@@ -1,0 +1,22 @@
+{
+  "tag": "build-3-4ff17d6",
+  "channel": "branch",
+  "version": "0.0.3",
+  "build_number": "3",
+  "bundle_id": "com.leonardoramirezr.24hclock",
+  "app_name": "24H Clock by Leonera Labs",
+  "branch": "claude/24h-clock-ios-cicd-ra1vhf",
+  "commit": "4ff17d657b5b6f0abdb5eabc5b12de0b56ec36d9",
+  "commit_title": "Silence the orientation warning and expect the profile retry",
+  "run_url": "https://github.com/leonardoramirezr/iOS-24h-Clock-by-Leonera-Labs/actions/runs/42174129178",
+  "devices": "2",
+  "commit_short": "4ff17d6",
+  "created_at": "2026-11-06T06:25:58Z",
+  "run_number": 3,
+  "ipa": "Clock24.ipa",
+  "ipa_size": 1312158,
+  "page_url": "https://leonardoramirezr.github.io/iOS-24h-Clock-by-Leonera-Labs/build-3-4ff17d6/",
+  "manifest_url": "https://leonardoramirezr.github.io/iOS-24h-Clock-by-Leonera-Labs/build-3-4ff17d6/manifest.plist",
+  "install_url": "itms-services://?action=download-manifest&url=https%3A%2F%2Fleonardoramirezr.github.io%2FiOS-24h-Clock-by-Leonera-Labs%2Fbuild-3-4ff17d6%2Fmanifest.plist",
+  "signed": true
+}
