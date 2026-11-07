@@ -31,6 +31,17 @@ SwiftUI and WidgetKit and has no third-party dependencies.
   event can happen once or repeat on chosen weekdays, and it can cross midnight.
   Overlapping events share their slice in concentric lanes, so every event stays
   visible. Tap a slice or a row to edit it, and swipe a row to delete it.
+- **Calendars (optional).** Settings › Calendars › Connect calendars asks for access to the
+  iPhone's calendars through EventKit. By default every calendar is connected, and you can
+  turn each one on or off (grouped by account). The timed events of the connected
+  calendars become slices in the color of their calendar, next to your own events, on the
+  app's dial and in the widgets. They also appear in the day's list with a rounded-square
+  marker. All-day events go only in the list, at the top, because they would cover the
+  whole dial. Calendar events are read-only: tap a slice or a row to see the time,
+  location and notes, and open the event in the Calendar app to change it. The widgets read
+  the calendars themselves with the access given to the app. They reload when the app
+  notices a change, and at least once an hour while calendars are connected. The app needs
+  only the `NSCalendarsFullAccessUsageDescription` usage string, no App ID capability.
 - **Widgets.** The dial is available on the Home Screen and the Lock Screen:
 
   | Requested size | WidgetKit family     | Where and what                                                                 |
@@ -49,7 +60,8 @@ SwiftUI and WidgetKit and has no third-party dependencies.
 project.yml            XcodeGen spec (app + widget extension)
 App/                   App target: entry point, store, location, screens, app icon
 Widget/                Widget extension: timeline provider and layouts
-Shared/                Compiled into both targets: models, sunrise math, dial view, strings
+Shared/                Compiled into both targets: models, sunrise math, calendar reading
+                       (EventKit), dial view, strings
 Config/                Info.plist and entitlements files
 scripts/               CI helpers (App Store Connect API, Pages publishing, IPA checks)
 .github/workflows/     build.yml

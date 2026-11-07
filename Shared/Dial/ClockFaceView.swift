@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// The circular 24-hour clock: the sky (day and night) around the dial, events as pie slices
-/// and a single hand for the current time. 24 is at the top, 6 on the right, 12 at the bottom
+/// The circular 24-hour clock: the sky (day and night) around the dial, events (the user's own
+/// and those of connected calendars) as pie slices and a single hand for the current time. 24 is at the top, 6 on the right, 12 at the bottom
 /// and 18 on the left, unless `currentTimeAtTop` turns the dial so the hand always points up.
 ///
 /// With the current time at the top, the quarter between the left and the top is the past
@@ -18,7 +18,7 @@ struct ClockFaceView: View {
     /// Whether the hand is drawn. Off when the dial shows another day than today.
     var showsHand: Bool = true
     /// Called when the user taps an event slice. Ignored in widgets.
-    var onSelectEvent: ((ClockEvent) -> Void)? = nil
+    var onSelectEvent: ((DialEvent) -> Void)? = nil
 
     var body: some View {
         GeometryReader { proxy in
@@ -160,7 +160,7 @@ struct ClockFaceView: View {
                 topHour: topHour
             )
             shape
-                .fill(slice.segment.event.color.color.opacity(0.9))
+                .fill(slice.segment.event.color.opacity(0.9))
                 .overlay {
                     shape.stroke(Color.white.opacity(0.6), lineWidth: max(0.5, radius * 0.007))
                 }
@@ -223,7 +223,7 @@ struct ClockFaceView: View {
                 .font(.system(size: fontSize, weight: .semibold, design: .rounded))
                 .lineLimit(1)
                 .minimumScaleFactor(0.5)
-                .foregroundStyle(slice.segment.event.color.prefersDarkText ? SkyPalette.dayInk.color : Color.white)
+                .foregroundStyle(slice.segment.event.prefersDarkText ? SkyPalette.dayInk.color : Color.white)
                 .frame(width: width)
                 .position(DialGeometry.point(
                     hour: slice.midHour,

@@ -1,15 +1,18 @@
 import SwiftUI
 
-/// The main screen: the 24-hour clock with today's events, followed by every other event.
+/// The main screen: the 24-hour clock with today's events (the user's own and those of the
+/// connected calendars), followed by every other event of the user.
 ///
 /// Unless the current time is at the top, swiping the clock from right to left shows the
 /// next days (and from left to right goes back, down to today).
 struct ContentView: View {
     @EnvironmentObject private var store: EventStore
     @EnvironmentObject private var locationService: LocationService
+    @EnvironmentObject private var calendarService: CalendarService
     @Environment(\.scenePhase) private var scenePhase
 
     @State private var editorRequest: EditorRequest?
+    @State private var selectedCalendarEvent: CalendarEvent?
     @State private var isShowingSettings = false
     /// Days after today shown on the dial; 0 is today.
     @State private var dayOffset = 0
@@ -55,14 +58,28 @@ struct ContentView: View {
             EventEditorView(event: request.event, isNew: request.isNew)
                 .environmentObject(store)
         }
+        .sheet(item: $selectedCalendarEvent) { event in
+            CalendarEventDetailView(event: event)
+        }
         .sheet(isPresented: $isShowingSettings) {
             SettingsView()
                 .environmentObject(store)
                 .environmentObject(locationService)
+                .environmentObject(calendarService)
+        }
+        .onAppear {
+            calendarService.show(calendarIDs: store.calendarSettings.calendarIDs)
+        }
+        .onChange(of: store.calendarSettings) { _, settings in
+            calendarService.show(calendarIDs: settings.calendarIDs)
+        }
+        .onChange(of: dayOffset) { _, offset in
+            calendarService.include(dayOffset: offset)
         }
         .onChange(of: scenePhase) { _, phase in
             if phase == .active {
                 refreshLocation()
+                calendarService.refresh()
             }
         }
         .onChange(of: store.dialSettings.currentTimeAtTop) { _, isAtTop in
@@ -94,11 +111,16 @@ struct ContentView: View {
     private func content(now: Date) -> some View {
         let offset = visibleDayOffset
         let selectedDay = day(at: now)
-        let daySegments = EventSegment.segments(for: store.events, on: selectedDay)
-        let dialSegments = store.dialSettings.segments(for: store.events, at: selectedDay)
+        let calendarEvents = calendarService.events
+        let daySegments = EventSegment.segments(for: store.events, calendarEvents: calendarEvents, on: selectedDay)
+        let dialSegments = store.dialSettings.segments(for: store.events, calendarEvents: calendarEvents, at: selectedDay)
         let daylight = store.daylightSettings.daylight(on: selectedDay)
-        let dayEvents = uniqueEvents(in: daySegments)
-        let dayEventIDs = Set(dayEvents.map { $0.id })
+        // All-day events aren't drawn on the dial, so they lead the list of the day.
+        let dayEvents = allDayEvents(in: calendarEvents, on: selectedDay) + uniqueEvents(in: daySegments)
+        let dayEventIDs = Set(dayEvents.compactMap { event -> UUID? in
+            guard case .clock(let clockEvent) = event else { return nil }
+            return clockEvent.id
+        })
         let others = store.events
             .filter { !dayEventIDs.contains($0.id) }
             .sorted(by: ClockEvent.listOrder)
@@ -123,7 +145,8 @@ struct ContentView: View {
                     .foregroundStyle(.secondary)
                 } else {
                     ForEach(dayEvents) { event in
-                        eventButton(event)
+                        dayEventButton(event)
+                            .deleteDisabled(event.isFromCalendar)
                     }
                     .onDelete { offsets in
                         delete(offsets, from: dayEvents)
@@ -139,7 +162,7 @@ struct ContentView: View {
                         eventButton(event)
                     }
                     .onDelete { offsets in
-                        delete(offsets, from: others)
+                        delete(offsets, from: others.map { DialEvent.clock($0) })
                     }
                 } header: {
                     Text("Other events")
@@ -159,7 +182,7 @@ struct ContentView: View {
                 currentTimeAtTop: store.dialSettings.currentTimeAtTop,
                 showsHand: offset == 0
             ) { event in
-                editorRequest = EditorRequest(event: event, isNew: false)
+                select(event)
             }
             .padding(.horizontal, 8)
             .offset(x: swipeOffset)
@@ -290,6 +313,31 @@ struct ContentView: View {
         }
     }
 
+    /// Opens the editor for the user's events, and the details for calendar events.
+    private func select(_ event: DialEvent) {
+        switch event {
+        case .clock(let clockEvent):
+            editorRequest = EditorRequest(event: clockEvent, isNew: false)
+        case .calendar(let calendarEvent):
+            selectedCalendarEvent = calendarEvent
+        }
+    }
+
+    @ViewBuilder
+    private func dayEventButton(_ event: DialEvent) -> some View {
+        switch event {
+        case .clock(let clockEvent):
+            eventButton(clockEvent)
+        case .calendar(let calendarEvent):
+            Button {
+                selectedCalendarEvent = calendarEvent
+            } label: {
+                CalendarEventRow(event: calendarEvent)
+            }
+            .foregroundStyle(.primary)
+        }
+    }
+
     private func eventButton(_ event: ClockEvent) -> some View {
         Button {
             editorRequest = EditorRequest(event: event, isNew: false)
@@ -299,9 +347,9 @@ struct ContentView: View {
         .foregroundStyle(.primary)
     }
 
-    private func uniqueEvents(in segments: [EventSegment]) -> [ClockEvent] {
-        var seen = Set<UUID>()
-        var result: [ClockEvent] = []
+    private func uniqueEvents(in segments: [EventSegment]) -> [DialEvent] {
+        var seen = Set<String>()
+        var result: [DialEvent] = []
         for segment in segments {
             if seen.insert(segment.event.id).inserted {
                 result.append(segment.event)
@@ -310,9 +358,21 @@ struct ContentView: View {
         return result
     }
 
-    private func delete(_ offsets: IndexSet, from events: [ClockEvent]) {
+    /// All-day calendar events on the calendar day of `day`.
+    private func allDayEvents(in events: [CalendarEvent], on day: Date) -> [DialEvent] {
+        guard let interval = Calendar.current.dateInterval(of: .day, for: day) else { return [] }
+        return events
+            .filter { $0.isAllDay && $0.overlaps(from: interval.start, to: interval.end) }
+            .sorted(by: CalendarEvent.listOrder)
+            .map { DialEvent.calendar($0) }
+    }
+
+    /// Deletes the user's events at `offsets`. Calendar events can't be deleted here.
+    private func delete(_ offsets: IndexSet, from events: [DialEvent]) {
         for index in offsets {
-            store.delete(events[index])
+            if case .clock(let event) = events[index] {
+                store.delete(event)
+            }
         }
     }
 
