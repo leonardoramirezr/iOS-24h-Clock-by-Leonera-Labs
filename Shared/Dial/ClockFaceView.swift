@@ -3,6 +3,10 @@ import SwiftUI
 /// The circular 24-hour clock: the sky (day and night) around the dial, events as pie slices
 /// and a single hand for the current time. 24 is at the top, 6 on the right, 12 at the bottom
 /// and 18 on the left, unless `currentTimeAtTop` turns the dial so the hand always points up.
+///
+/// With the current time at the top, the quarter between the left and the top is the past
+/// (`DialSettings.pastHoursAtTop`) and the rest, clockwise from the top, is the future: past
+/// events are faded and a dashed line marks where the window of 24 hours begins and ends.
 struct ClockFaceView: View {
     let date: Date
     let daylight: Daylight
@@ -11,6 +15,8 @@ struct ClockFaceView: View {
     /// Turns the dial so the current time stays at the top: the hand points up and the hours
     /// move counterclockwise as the day goes by.
     var currentTimeAtTop: Bool = false
+    /// Whether the hand is drawn. Off when the dial shows another day than today.
+    var showsHand: Bool = true
     /// Called when the user taps an event slice. Ignored in widgets.
     var onSelectEvent: ((ClockEvent) -> Void)? = nil
 
@@ -24,7 +30,14 @@ struct ClockFaceView: View {
         .aspectRatio(1, contentMode: .fit)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text("24-hour clock"))
-        .accessibilityValue(Text(verbatim: TimeText.string(date: date)))
+        .accessibilityValue(accessibilityValue)
+    }
+
+    private var accessibilityValue: Text {
+        if showsHand {
+            return Text(verbatim: TimeText.string(date: date))
+        }
+        return Text(date, format: .dateTime.weekday(.wide).day().month(.wide))
     }
 
     /// The hour drawn at the top of the dial.
@@ -46,13 +59,24 @@ struct ClockFaceView: View {
             if style.showsSkyIcons {
                 skyIcons(radius: radius, center: center)
             }
-            eventSlices(slices, radius: radius)
+            if currentTimeAtTop {
+                // The future at full strength, the past faded.
+                events(slices, radius: radius, center: center)
+                    .mask(windowSector(fromHour: topHour, toHour: topHour + 24 - DialSettings.pastHoursAtTop))
+                events(slices, radius: radius, center: center)
+                    .mask(windowSector(fromHour: topHour - DialSettings.pastHoursAtTop, toHour: topHour))
+                    .opacity(0.4)
+            } else {
+                events(slices, radius: radius, center: center)
+            }
             ticks(radius: radius)
             hourLabels(radius: radius, center: center)
-            if style.showsEventLabels {
-                eventLabels(slices, radius: radius, center: center)
+            if currentTimeAtTop {
+                windowEdge(radius: radius)
             }
-            hand(radius: radius, center: center)
+            if showsHand {
+                hand(radius: radius, center: center)
+            }
             Circle()
                 .strokeBorder(Color.black.opacity(0.12), lineWidth: max(0.5, radius * 0.01))
         }
@@ -67,6 +91,36 @@ struct ClockFaceView: View {
     }
 
     // MARK: - Layers
+
+    private func events(_ slices: [DialSlice], radius: CGFloat, center: CGPoint) -> some View {
+        ZStack {
+            eventSlices(slices, radius: radius)
+            if style.showsEventLabels {
+                eventLabels(slices, radius: radius, center: center)
+            }
+        }
+    }
+
+    /// A wedge of the whole dial between two hours, used to split the past from the future.
+    private func windowSector(fromHour startHour: Double, toHour endHour: Double) -> DialSectorShape {
+        DialSectorShape(startHour: startHour, endHour: endHour, innerRadius: 0, outerRadius: 1, topHour: topHour)
+    }
+
+    /// The dashed line on the left where the past begins and the future ends.
+    private func windowEdge(radius: CGFloat) -> some View {
+        let hour = topHour - DialSettings.pastHoursAtTop
+        let lineWidth = max(1, radius * 0.012)
+        return DialRadialLineShape(
+            hour: hour,
+            innerRadius: style.eventInnerRadius,
+            outerRadius: style.eventOuterRadius,
+            topHour: topHour
+        )
+        .stroke(
+            SkyPalette.ink(atHour: hour.positiveModulo(24), daylight: daylight).color.opacity(0.7),
+            style: StrokeStyle(lineWidth: lineWidth, lineCap: .round, dash: [lineWidth * 2.5, lineWidth * 2.5])
+        )
+    }
 
     @ViewBuilder
     private func skyIcons(radius: CGFloat, center: CGPoint) -> some View {

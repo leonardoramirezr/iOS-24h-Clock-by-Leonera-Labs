@@ -68,4 +68,8 @@
 "No more events today" = "No hay más eventos hoy";
 "Dial" = "Esfera";
 "Current time at top" = "Hora actual arriba";
-"The dial turns so the current time is always at the top, as if the clock moved counterclockwise." = "La esfera gira para que la hora actual quede siempre arriba, como si el reloj avanzara en sentido antihorario.";
+"The dial turns so the current time is always at the top. The quarter between the left and the top shows the last 6 hours, and the next 18 hours follow clockwise from the top. When this is off, swipe the clock from right to left to see the next days." = "La esfera gira para que la hora actual quede siempre arriba. El cuadrante entre la izquierda y arriba muestra las últimas 6 horas, y las 18 horas siguientes avanzan en sentido horario desde arriba. Cuando está desactivado, desliza el reloj de derecha a izquierda para ver los días siguientes.";
+"Tomorrow" = "Mañana";
+"Previous day" = "Día anterior";
+"Next day" = "Día siguiente";
+"No events on this day. Tap + to add one." = "No hay eventos este día. Toca + para añadir uno.";

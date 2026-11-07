@@ -95,7 +95,7 @@ struct ClockWidgetView: View {
         ClockFaceView(
             date: entry.date,
             daylight: daylight,
-            segments: segments,
+            segments: entry.snapshot.dial.segments(for: entry.snapshot.events, at: entry.date),
             style: style,
             currentTimeAtTop: entry.snapshot.dial.currentTimeAtTop
         )
@@ -147,6 +147,7 @@ struct ClockWidgetView: View {
 
     private var hour: Double { entry.date.hourOfDay() }
     private var daylight: Daylight { entry.snapshot.daylight.daylight(on: entry.date) }
+    /// Today's segments, for the agenda. The dial asks `DialSettings` for its own.
     private var segments: [EventSegment] { EventSegment.segments(for: entry.snapshot.events, on: entry.date) }
 
     /// The sky of the current hour, so the widget itself is dark at night and light by day.

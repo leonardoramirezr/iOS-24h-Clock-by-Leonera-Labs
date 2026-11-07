@@ -41,7 +41,43 @@ struct EventSegment: Identifiable, Hashable {
                 result.append(EventSegment(event: event, startMinute: 0, durationMinutes: tail))
             }
         }
-        return result.sorted { lhs, rhs in
+        return sortedForDial(result)
+    }
+
+    /// Visible segments of `events` in the 24 hours that begin at `start`, placed on the dial
+    /// by their time of day. A segment can wrap past midnight, and the occurrences of the day
+    /// before, the day of `start` and the next day are all taken into account.
+    ///
+    /// Occurrences are cut at both ends of the window, so the same repeating event can show
+    /// up twice: the end of one occurrence where the window begins and the start of the next
+    /// one where it ends.
+    static func segments(for events: [ClockEvent], from start: Date, calendar: Calendar = .current) -> [EventSegment] {
+        let windowStart = Date(timeIntervalSinceReferenceDate: (start.timeIntervalSinceReferenceDate / 60).rounded(.down) * 60)
+        let windowEnd = windowStart.addingTimeInterval(TimeInterval(ClockEvent.minutesPerDay * 60))
+        let firstDay = calendar.startOfDay(for: windowStart)
+        var result: [EventSegment] = []
+        for dayOffset in -1...1 {
+            guard let day = calendar.date(byAdding: .day, value: dayOffset, to: firstDay) else { continue }
+            for event in events where event.starts(on: day, calendar: calendar) {
+                let occurrenceStart = day.atMinuteOfDay(event.startMinute, calendar: calendar)
+                let occurrenceEnd = occurrenceStart.addingTimeInterval(TimeInterval(event.durationMinutes * 60))
+                let visibleStart = max(occurrenceStart, windowStart)
+                let visibleEnd = min(occurrenceEnd, windowEnd)
+                let minutes = Int((visibleEnd.timeIntervalSince(visibleStart) / 60).rounded())
+                guard minutes > 0 else { continue }
+                result.append(EventSegment(
+                    event: event,
+                    startMinute: visibleStart.minuteOfDay(calendar: calendar),
+                    durationMinutes: min(minutes, ClockEvent.minutesPerDay)
+                ))
+            }
+        }
+        return sortedForDial(result)
+    }
+
+    /// Sorted by start time, longest first on ties.
+    private static func sortedForDial(_ segments: [EventSegment]) -> [EventSegment] {
+        segments.sorted { lhs, rhs in
             if lhs.startMinute != rhs.startMinute {
                 return lhs.startMinute < rhs.startMinute
             }

@@ -68,4 +68,8 @@
 "No more events today" = "No more events today";
 "Dial" = "Dial";
 "Current time at top" = "Current time at top";
-"The dial turns so the current time is always at the top, as if the clock moved counterclockwise." = "The dial turns so the current time is always at the top, as if the clock moved counterclockwise.";
+"The dial turns so the current time is always at the top. The quarter between the left and the top shows the last 6 hours, and the next 18 hours follow clockwise from the top. When this is off, swipe the clock from right to left to see the next days." = "The dial turns so the current time is always at the top. The quarter between the left and the top shows the last 6 hours, and the next 18 hours follow clockwise from the top. When this is off, swipe the clock from right to left to see the next days.";
+"Tomorrow" = "Tomorrow";
+"Previous day" = "Previous day";
+"Next day" = "Next day";
+"No events on this day. Tap + to add one." = "No events on this day. Tap + to add one.";
