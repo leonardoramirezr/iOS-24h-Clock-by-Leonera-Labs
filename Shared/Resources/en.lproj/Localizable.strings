@@ -73,3 +73,15 @@
 "Previous day" = "Previous day";
 "Next day" = "Next day";
 "No events on this day. Tap + to add one." = "No events on this day. Tap + to add one.";
+"Calendars" = "Calendars";
+"Connect calendars" = "Connect calendars";
+"Connected calendars" = "Connected calendars";
+"Events from the calendars you connect are drawn on the clock and in the widgets, in the color of their calendar. All-day events are listed below the clock instead of on the dial." = "Events from the calendars you connect are drawn on the clock and in the widgets, in the color of their calendar. All-day events are listed below the clock instead of on the dial.";
+"Calendar access is off. Turn on full access in Settings to show your calendar events on the clock." = "Calendar access is off. Turn on full access in Settings to show your calendar events on the clock.";
+"No calendars found." = "No calendars found.";
+"Turn on the calendars whose events you want to see on the clock." = "Turn on the calendars whose events you want to see on the clock.";
+"All day" = "All day";
+"Calendar Event" = "Calendar Event";
+"Notes" = "Notes";
+"Open in Calendar" = "Open in Calendar";
+"This event comes from your calendar. Change it in the Calendar app." = "This event comes from your calendar. Change it in the Calendar app.";

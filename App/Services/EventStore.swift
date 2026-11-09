@@ -2,7 +2,8 @@ import Foundation
 import os
 import WidgetKit
 
-/// Owns the user's events, daylight and dial settings, saves them, and keeps the widget in sync.
+/// Owns the user's events, daylight, dial and calendar settings, saves them, and keeps the
+/// widget in sync.
 final class EventStore: ObservableObject {
     @Published private(set) var snapshot: AppSnapshot
 
@@ -25,6 +26,7 @@ final class EventStore: ObservableObject {
     var events: [ClockEvent] { snapshot.events }
     var daylightSettings: DaylightSettings { snapshot.daylight }
     var dialSettings: DialSettings { snapshot.dial }
+    var calendarSettings: CalendarSettings { snapshot.calendars }
 
     func contains(_ event: ClockEvent) -> Bool {
         snapshot.events.contains { $0.id == event.id }
@@ -54,6 +56,12 @@ final class EventStore: ObservableObject {
     func updateDial(_ settings: DialSettings) {
         guard settings != snapshot.dial else { return }
         snapshot.dial = settings
+        persist()
+    }
+
+    func updateCalendars(_ settings: CalendarSettings) {
+        guard settings != snapshot.calendars else { return }
+        snapshot.calendars = settings
         persist()
     }
 

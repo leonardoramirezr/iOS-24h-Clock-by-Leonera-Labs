@@ -39,6 +39,7 @@ targets:
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
     dependencies:
       - target: Clock24Widget
+      - sdk: EventKit.framework
 
   Clock24Widget:
     type: app-extension
@@ -57,6 +58,7 @@ targets:
     dependencies:
       - sdk: WidgetKit.framework
       - sdk: SwiftUI.framework
+      - sdk: EventKit.framework
 
 schemes:
   Clock24:

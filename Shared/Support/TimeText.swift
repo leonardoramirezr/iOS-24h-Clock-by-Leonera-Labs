@@ -20,10 +20,10 @@ enum TimeText {
         string(minuteOfDay: date.minuteOfDay(calendar: calendar))
     }
 
-    /// A localized, abbreviated duration such as "1h 30m".
-    static func duration(minutes: Int) -> String {
+    /// A localized, abbreviated duration such as "1h 30m", or "2d 3h" with `includesDays`.
+    static func duration(minutes: Int, includesDays: Bool = false) -> String {
         let formatter = DateComponentsFormatter()
-        formatter.allowedUnits = [.hour, .minute]
+        formatter.allowedUnits = includesDays ? [.day, .hour, .minute] : [.hour, .minute]
         formatter.unitsStyle = .abbreviated
         formatter.zeroFormattingBehavior = .dropAll
         return formatter.string(from: TimeInterval(minutes * 60)) ?? "\(minutes) min"

@@ -95,7 +95,11 @@ struct ClockWidgetView: View {
         ClockFaceView(
             date: entry.date,
             daylight: daylight,
-            segments: entry.snapshot.dial.segments(for: entry.snapshot.events, at: entry.date),
+            segments: entry.snapshot.dial.segments(
+                for: entry.snapshot.events,
+                calendarEvents: entry.calendarEvents,
+                at: entry.date
+            ),
             style: style,
             currentTimeAtTop: entry.snapshot.dial.currentTimeAtTop
         )
@@ -129,7 +133,7 @@ struct ClockWidgetView: View {
     private func agendaLine(segment: EventSegment, detail: Text) -> some View {
         HStack(spacing: 6) {
             Circle()
-                .fill(segment.event.color.color)
+                .fill(segment.event.color)
                 .frame(width: 8, height: 8)
             VStack(alignment: .leading, spacing: 0) {
                 Text(segment.event.title)
@@ -148,7 +152,9 @@ struct ClockWidgetView: View {
     private var hour: Double { entry.date.hourOfDay() }
     private var daylight: Daylight { entry.snapshot.daylight.daylight(on: entry.date) }
     /// Today's segments, for the agenda. The dial asks `DialSettings` for its own.
-    private var segments: [EventSegment] { EventSegment.segments(for: entry.snapshot.events, on: entry.date) }
+    private var segments: [EventSegment] {
+        EventSegment.segments(for: entry.snapshot.events, calendarEvents: entry.calendarEvents, on: entry.date)
+    }
 
     /// The sky of the current hour, so the widget itself is dark at night and light by day.
     private var background: some View {

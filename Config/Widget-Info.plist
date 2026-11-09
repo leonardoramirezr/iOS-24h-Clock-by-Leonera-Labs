@@ -25,6 +25,9 @@
 	<string>$(MARKETING_VERSION)</string>
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
+	<!-- The widget reads the calendars with the access the user gave to the app. -->
+	<key>NSCalendarsFullAccessUsageDescription</key>
+	<string>Events from the calendars you connect are shown on the 24-hour clock and in its widgets.</string>
 	<key>NSExtension</key>
 	<dict>
 		<key>NSExtensionPointIdentifier</key>

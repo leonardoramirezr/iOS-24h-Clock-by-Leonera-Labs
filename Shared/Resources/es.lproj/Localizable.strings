@@ -73,3 +73,15 @@
 "Previous day" = "Día anterior";
 "Next day" = "Día siguiente";
 "No events on this day. Tap + to add one." = "No hay eventos este día. Toca + para añadir uno.";
+"Calendars" = "Calendarios";
+"Connect calendars" = "Conectar calendarios";
+"Connected calendars" = "Calendarios conectados";
+"Events from the calendars you connect are drawn on the clock and in the widgets, in the color of their calendar. All-day events are listed below the clock instead of on the dial." = "Los eventos de los calendarios que conectes se dibujan en el reloj y en los widgets, con el color de su calendario. Los eventos de todo el día aparecen en la lista bajo el reloj, no en la esfera.";
+"Calendar access is off. Turn on full access in Settings to show your calendar events on the clock." = "El acceso a los calendarios está desactivado. Activa el acceso total en Ajustes para ver los eventos de tus calendarios en el reloj.";
+"No calendars found." = "No se encontraron calendarios.";
+"Turn on the calendars whose events you want to see on the clock." = "Activa los calendarios cuyos eventos quieres ver en el reloj.";
+"All day" = "Todo el día";
+"Calendar Event" = "Evento del calendario";
+"Notes" = "Notas";
+"Open in Calendar" = "Abrir en Calendario";
+"This event comes from your calendar. Change it in the Calendar app." = "Este evento viene de tu calendario. Cámbialo en la app Calendario.";

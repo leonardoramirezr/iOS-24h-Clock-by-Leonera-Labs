@@ -1,3 +1,4 @@
 /* Localized Info.plist values. */
 
 "CFBundleDisplayName" = "Reloj 24H";
+"NSCalendarsFullAccessUsageDescription" = "Los eventos de los calendarios que conectes se muestran en el reloj de 24 horas y en sus widgets.";

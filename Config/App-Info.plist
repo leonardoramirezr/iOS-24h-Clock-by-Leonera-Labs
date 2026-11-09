@@ -29,6 +29,8 @@
 	<false/>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSCalendarsFullAccessUsageDescription</key>
+	<string>Events from the calendars you connect are shown on the 24-hour clock and in its widgets.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Your approximate location is used to calculate local sunrise and sunset times.</string>
 	<key>SharedKeychainGroup</key>

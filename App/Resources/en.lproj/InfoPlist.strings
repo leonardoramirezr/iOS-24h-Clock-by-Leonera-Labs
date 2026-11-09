@@ -3,3 +3,4 @@
 "CFBundleDisplayName" = "24H Clock by Leonera Labs";
 "CFBundleName" = "24H Clock";
 "NSLocationWhenInUseUsageDescription" = "Your approximate location is used to calculate local sunrise and sunset times.";
+"NSCalendarsFullAccessUsageDescription" = "Events from the calendars you connect are shown on the 24-hour clock and in its widgets.";

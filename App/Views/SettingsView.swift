@@ -1,10 +1,11 @@
 import SwiftUI
 import UIKit
 
-/// Dial, sunrise and sunset preferences and information about the app.
+/// Dial, calendar, sunrise and sunset preferences and information about the app.
 struct SettingsView: View {
     @EnvironmentObject private var store: EventStore
     @EnvironmentObject private var locationService: LocationService
+    @EnvironmentObject private var calendarService: CalendarService
     @Environment(\.dismiss) private var dismiss
     @Environment(\.openURL) private var openURL
 
@@ -17,6 +18,14 @@ struct SettingsView: View {
                     Text("Dial")
                 } footer: {
                     Text("The dial turns so the current time is always at the top. The quarter between the left and the top shows the last 6 hours, and the next 18 hours follow clockwise from the top. When this is off, swipe the clock from right to left to see the next days.")
+                }
+
+                Section {
+                    calendarRows
+                } header: {
+                    Text("Calendars")
+                } footer: {
+                    Text("Events from the calendars you connect are drawn on the clock and in the widgets, in the color of their calendar. All-day events are listed below the clock instead of on the dial.")
                 }
 
                 Section {
@@ -80,9 +89,7 @@ struct SettingsView: View {
                 Text("Location access is off. Turn it on in Settings to use local sunrise and sunset times.")
                     .foregroundStyle(.secondary)
                 Button("Open Settings") {
-                    if let url = URL(string: UIApplication.openSettingsURLString) {
-                        openURL(url)
-                    }
+                    openAppSettings()
                 }
                 .buttonStyle(.borderless)
             }
@@ -104,6 +111,54 @@ struct SettingsView: View {
             requestLocation()
         }
         .disabled(locationService.status == .locating)
+    }
+
+    @ViewBuilder
+    private var calendarRows: some View {
+        switch calendarService.access {
+        case .notDetermined:
+            Button("Connect calendars") {
+                connectCalendars()
+            }
+        case .denied:
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Calendar access is off. Turn on full access in Settings to show your calendar events on the clock.")
+                    .foregroundStyle(.secondary)
+                Button("Open Settings") {
+                    openAppSettings()
+                }
+                .buttonStyle(.borderless)
+            }
+        case .granted:
+            NavigationLink {
+                CalendarSelectionView()
+            } label: {
+                LabeledContent("Connected calendars", value: "\(connectedCalendarCount)")
+            }
+        }
+    }
+
+    /// Connected calendars that are still on the iPhone.
+    private var connectedCalendarCount: Int {
+        let ids = store.calendarSettings.calendarIDs
+        return calendarService.calendars.filter { ids.contains($0.id) }.count
+    }
+
+    /// Asks for access to the calendars. The first time it is granted, every calendar is
+    /// connected; the user can then turn off the ones they don't want.
+    private func connectCalendars() {
+        calendarService.requestAccess { granted in
+            guard granted, !store.calendarSettings.isConnected else { return }
+            var updated = store.calendarSettings
+            updated.calendarIDs = Set(calendarService.calendars.map { $0.id })
+            store.updateCalendars(updated)
+        }
+    }
+
+    private func openAppSettings() {
+        if let url = URL(string: UIApplication.openSettingsURLString) {
+            openURL(url)
+        }
     }
 
     private var settings: Binding<DaylightSettings> {
