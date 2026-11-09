@@ -1,0 +1,22 @@
+{
+  "tag": "build-2-ae1e723",
+  "channel": "branch",
+  "version": "0.0.2",
+  "build_number": "2",
+  "bundle_id": "com.leonardoramirezr.24hclock",
+  "app_name": "24H Clock by Leonera Labs",
+  "branch": "claude/24h-clock-ios-cicd-ra1vhf",
+  "commit": "ae1e72375c5f6db096a742f6522f588afb476894",
+  "commit_title": "Retry the archive when Xcode misses a just-created profile",
+  "run_url": "https://github.com/leonardoramirezr/iOS-24h-Clock-by-Leonera-Labs/actions/runs/42173711945",
+  "devices": "2",
+  "commit_short": "ae1e723",
+  "created_at": "2026-11-06T06:21:23Z",
+  "run_number": 2,
+  "ipa": "Clock24.ipa",
+  "ipa_size": 1312148,
+  "page_url": "https://leonardoramirezr.github.io/iOS-24h-Clock-by-Leonera-Labs/build-2-ae1e723/",
+  "manifest_url": "https://leonardoramirezr.github.io/iOS-24h-Clock-by-Leonera-Labs/build-2-ae1e723/manifest.plist",
+  "install_url": "itms-services://?action=download-manifest&url=https%3A%2F%2Fleonardoramirezr.github.io%2FiOS-24h-Clock-by-Leonera-Labs%2Fbuild-2-ae1e723%2Fmanifest.plist",
+  "signed": true
+}
